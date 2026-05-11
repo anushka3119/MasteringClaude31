@@ -1,0 +1,18 @@
+{
+  "name": "chaos-engineering-system",
+  "version": "1.0.0",
+  "description": "Chaos engineering with Claude AI agent incident resolution",
+  "scripts": {
+    "chaos": "npx ts-node scripts/chaos-monkey.ts",
+    "app": "cd ClaudeSubAgentIntegration/app && npm run dev",
+    "test-services": "node services/auth-service/index.js & node services/analytics-service/index.js & node services/notification-service/index.js & node services/payment-service/index.js",
+    "all": "npm run chaos && npm run app"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5",
+    "ts-node": "^10.9.1"
+  }
+}

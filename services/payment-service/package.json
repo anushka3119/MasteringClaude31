@@ -1,0 +1,16 @@
+{
+  "name": "payment-service",
+  "version": "1.0.0",
+  "description": "Payment service",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"No tests yet\""
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
