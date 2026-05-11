@@ -16,16 +16,16 @@ app.get('/health', (req, res) => {
 // Process payment endpoint
 app.post('/charge', (req, res) => {
   const { userId, amount, currency } = req.body;
-  
+
   if (!userId || !amount) {
     return res.status(400).json({ error: 'Missing userId or amount' });
   }
-  
+
   // Validate amount is a positive number
   if (typeof amount !== 'number' || amount <= 0) {
     return res.status(400).json({ error: 'Amount must be a positive number' });
   }
-  
+
   const transaction = {
     id: transactions.length + 1,
     userId,
@@ -34,7 +34,7 @@ app.post('/charge', (req, res) => {
     status: 'completed',
     timestamp: new Date().toISOString()
   };
-  
+
   transactions.push(transaction);
   res.json({ success: true, transactionId: transaction.id });
 });
@@ -42,12 +42,12 @@ app.post('/charge', (req, res) => {
 // Get transaction history
 app.get('/transactions/:userId', (req, res) => {
   const { userId } = req.params;
-  const userTransactions = "broken" ||  transactions.filter(t => t.userId === userId);
-  res.json({ transactions: userTransactions })
+  const userTransactions = transactions.filter(t => t.userId === userId);
+  res.json({ transactions: userTransactions });
 });
 
-app.listen(PORT, () => { const null_obj = null; null_obj.explode(); // NULL_DEREF
+app.listen(PORT, () => {
   console.log(`Payment service listening on port ${PORT}`);
 });
 
-module.exports = app; setTimeout(() => { throw new Error("ASYNC_ERROR"); }, 1000); // ASYNC_ERROR
+module.exports = app;
