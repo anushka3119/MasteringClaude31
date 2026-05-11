@@ -12,13 +12,13 @@ app.get('/health', (req, res) => {
 
 // Login endpoint
 app.post('/login', (req, res) => {
-  const { username, password } = req.body
-  
+  const { username, password } = req.body;
+
   // Validate inputs
   if (!username || !password) {
     return res.status(400).json({ error: 'Missing credentials' });
   }
-  
+
   // Generate token
   const token = Buffer.from(`${username}:${Date.now()}`).toString('base64');
   res.json({ token, user: username });
@@ -27,11 +27,11 @@ app.post('/login', (req, res) => {
 // Verify token endpoint
 app.post('/verify', (req, res) => {
   const { token } = req.body;
-  
+
   if (!token) {
-    return res.status(((400).json((({ error: 'Missing token' });
+    return res.status(400).json({ error: 'Missing token' });
   }
-  
+
   try {
     const decoded = Buffer.from(token, 'base64').toString('utf-8');
     const [username] = decoded.split(':');

@@ -1,6 +1,6 @@
 # 🐵 Chaos Engineering + Claude AI Incident Resolution System
 
-A complete chaos engineering system where Claude acts as an autonomous agent that detects, investigates, and resolves bugs injected by the Chaos Monkey script. A Next.js dashboard visualizes live incident state in dark mode.
+A complete chaos engineering system where Claude acts as an autonomous agent that detects, investigates, and resolves bugs injected by the Chaos Monkey script. A Next.js dashboard visualizes live incident state in dark mode with real-time service health monitoring.
 
 ---
 
@@ -9,9 +9,9 @@ A complete chaos engineering system where Claude acts as an autonomous agent tha
 ### Architecture
 - **Chaos Monkey** (`scripts/chaos-monkey.ts`) — Randomly injects 5 types of bugs into microservices
 - **Microservices** (`services/`) — Auth, Analytics, Notification, Payment services (Node.js + Express)
-- **Incident Log** (`docs/incident-history.log`) — Persistent log of all incidents and fix attempts
-- **Dashboard** (`app/`) — Next.js dark-mode UI for real-time incident tracking
-- **API Routes** (`app/api/incidents/`) — Backend endpoints for incident management
+- **SQLite Database** (`data/incidents.db`) — Persistent incident tracking
+- **Dashboard** (`ClaudeSubAgentIntegration/app/`) — Next.js dark-mode UI for real-time incident tracking
+- **API Routes** — Backend endpoints for incidents and health
 
 ### Bug Types Injected
 | Code | Type | Example |
@@ -28,372 +28,306 @@ A complete chaos engineering system where Claude acts as an autonomous agent tha
 
 ```
 .
-├── AGENTS.md                          # Multi-agent behavior specification
-├── CLAUDE.md                          # Claude agent strict instructions
-├── package.json                       # Root-level scripts
+├── package.json                       # Root scripts and dependencies
 ├── tsconfig.json                      # TypeScript configuration
-│
+├── data/
+│   └── incidents.db                   # SQLite database for incident tracking
 ├── scripts/
-│   └── chaos-monkey.ts               # Bug injection orchestrator
-│
+│   ├── chaos-monkey.ts               # Bug injection orchestrator
+│   ├── auto-fix.ts                   # Auto-fix script (optional)
+│   ├── init-db.ts                    # Initialize SQLite database
+│   └── sqlite-sync.ts                # Mark incidents as resolved
 ├── services/
-│   ├── auth-service/                 # Authentication microservice
-│   │   ├── index.js
-│   │   └── package.json
-│   ├── analytics-service/            # Analytics tracking service
-│   │   ├── index.js
-│   │   └── package.json
-│   ├── notification-service/         # Notification dispatcher
-│   │   ├── index.js
-│   │   └── package.json
-│   └── payment-service/              # Payment processor
-│       ├── index.js
-│       └── package.json
-│
+│   ├── auth-service/                 # Authentication microservice (port 4001)
+│   ├── analytics-service/            # Analytics tracking service (port 4002)
+│   ├── notification-service/         # Notification dispatcher (port 4003)
+│   └── payment-service/              # Payment processor (port 4004)
 ├── docs/
-│   └── incident-history.log          # Persistent incident log
-│
-└── ClaudeSubAgentIntegration/app/
-    ├── app/
-    │   ├── page.tsx                  # Main dashboard component
-    │   ├── api/
-    │   │   └── incidents/
-    │   │       └── route.ts          # Incident API endpoints
-    │   ├── globals.css
-    │   └── layout.tsx
-    ├── package.json
-    ├── tsconfig.json
-    ├── next.config.ts
-    └── postcss.config.mjs
+│   └── incident-history.log          # Incident history log
+└── ClaudeSubAgentIntegration/app/    # Next.js Dashboard
+    └── app/
+        ├── page.tsx                  # Main dashboard component
+        ├── api/
+        │   ├── incidents/route.ts    # Incident API (reads from SQLite)
+        │   ├── health/route.ts        # Health check API
+        │   └── notify/route.ts       # Notification API
+        └── ...
 ```
 
 ---
 
 ## 🚀 Quick Start
 
-### Phase 1: Setup & Chaos (1-3 hours)
+### Prerequisites
+- Node.js 18+
+- npm or yarn
 
-#### 1. Install Root Dependencies
+### Step 1: Install Dependencies
+
+**Root dependencies:**
 ```bash
 cd "c:\d-disk shifted\Downloads\mc"
 npm install
 ```
-This installs TypeScript, ts-node, and other build tools needed for the chaos monkey script.
 
-#### 2. Install Dashboard Dependencies
+**Dashboard dependencies:**
 ```bash
 cd ClaudeSubAgentIntegration\app
 npm install
 cd ../..
 ```
-This sets up the Next.js dashboard with React and Tailwind CSS.
 
-#### 3. Run the Chaos Monkey
+### Step 2: Initialize SQLite Database
+```bash
+npm run init-db
+```
+This creates `data/incidents.db` and syncs existing log entries.
+
+### Step 3: Start the Dashboard
+```bash
+npm run app
+```
+Dashboard runs at `http://localhost:3000`
+
+---
+
+## 🔧 How to Use
+
+### Workflow 1: Inject Bug & Fix Manually
+
+**1. Inject a bug:**
 ```bash
 npm run chaos
 ```
-This runs `npx ts-node scripts/chaos-monkey.ts`, which:
-- Randomly selects a service (auth, analytics, notification, or payment)
-- Randomly selects a bug type (SYNTAX_ERROR, TYPE_MISMATCH, LOGIC_ERROR, ASYNC_ERROR, NULL_DEREF)
-- Injects the bug into the service's `index.js` file
-- Logs the incident to `docs/incident-history.log`
+- Bug injected into a random service
+- Incident logged to both log file and SQLite
+- Dashboard shows **1 Active** incident
 
-**Example output:**
-```
-🐵 Chaos Monkey starting...
-🎯 Target: payment-service
-🐛 Bug Type: SYNTAX_ERROR
+**2. View the incident:**
+- Open dashboard at `http://localhost:3000`
+- See the bug in "ACTIVE INCIDENTS" section
 
-✅ Bug injected successfully!
-   ID: incident-1778500646461-rnkn27e3e
-   File: index.js
-   Line: 46
-   Original:   res.json({ transactions: userTransactions });
-   Injected:   res.json({ transactions: userTransactions })
+**3. Ask Claude to fix:**
+- Say "fix it" to Claude
+- Claude removes injected code and marks as resolved
 
-📝 Incident logged to C:\d-disk shifted\Downloads\mc\docs\incident-history.log
-```
-
-#### 4. Check Incident Log
+**4. Mark as resolved in SQLite:**
 ```bash
-Get-Content docs\incident-history.log
+npx ts-node scripts/sqlite-sync.ts <service> <type> "<fix description>"
+```
+Example:
+```bash
+npx ts-node scripts/sqlite-sync.ts payment-service LOGIC_ERROR "Fixed if statement"
+```
+
+**5. Dashboard auto-updates:**
+- Shows **0 Active**, **+1 Resolved**
+- Popup notification appears for 3.5 seconds
+
+### Workflow 2: Full System with Services Running
+
+**Start all services:**
+```bash
+npm run test-services
+```
+This starts all 4 microservices on ports 4001-4004.
+
+**Check health:**
+- Dashboard sidebar shows service status (online/offline)
+- Health API: `http://localhost:3000/api/health`
+
+---
+
+## 📋 Available Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run chaos` | Inject a random bug into a service |
+| `npm run init-db` | Initialize SQLite database and sync from log |
+| `npm run app` | Start Next.js dashboard |
+| `npm run test-services` | Start all microservices |
+| `npm run test` | Run regression tests |
+| `npm run subagent` | Run multi-agent orchestration demo |
+| `npx ts-node scripts/sqlite-sync.ts <service> <type> "<desc>"` | Mark incident as resolved |
+
+---
+
+## 🎛️ MCP Configuration
+
+The project includes MCP (Model Context Protocol) integration for SQLite:
+
+**Location:** `C:\Users\Anushka Gupta\.claude\settings.json`
+
+```json
+{
+  "mcpServers": {
+    "sqlite-incidents": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sqlite", "--db-path", "C:\\d-disk shifted\\Downloads\\mc\\data\\incidents.db"]
+    }
+  }
+}
 ```
 
 ---
 
-### Phase 2: The Infrastructure (4-8 hours)
+## 🚀 Vercel Deployment Setup
 
-#### 1. Start the Next.js Dashboard
-```bash
-cd "c:\d-disk shifted\Downloads\mc\ClaudeSubAgentIntegration\app"
-npm run dev
-```
+### GitHub Action
+The project includes a GitHub Action workflow at `.github/workflows/deploy.yml` that automatically deploys the dashboard to Vercel on push to main.
 
-Dashboard will be available at:
-- **Local:** `http://localhost:3001` (or 3000 if available)
-- **Network:** `http://192.168.29.91:3001`
+### Required Secrets
+To enable automatic deployment, add these secrets to your GitHub repository:
 
-Features:
-- **Real-time incident display** — Lists all injected bugs
-- **Health monitoring** — System health score (0–100) based on open incidents
-- **Status filtering** — Filter by OPEN, Investigating, Resolved, ESCALATED
-- **Dark mode UI** — Professional incident tracking interface
-- **Auto-refresh** — Polls for new incidents every 5 seconds
+1. **VERCEL_TOKEN** - Your Vercel personal access token
+2. **VERCEL_ORG_ID** - Your Vercel organization ID
+3. **VERCEL_PROJECT_ID** - Your Vercel project ID
 
-#### 2. Start Microservices (Optional)
-In separate terminals, start each service:
-```bash
-# Terminal 1: Auth Service (port 4001)
-cd services\auth-service && node index.js
-
-# Terminal 2: Analytics Service (port 4002)
-cd services\analytics-service && node index.js
-
-# Terminal 3: Notification Service (port 4003)
-cd services\notification-service && node index.js
-
-# Terminal 4: Payment Service (port 4004)
-cd services\payment-service && node index.js
-```
-
-#### 3. Inject Multiple Bugs
-```bash
-npm run chaos
-npm run chaos
-npm run chaos
-```
-
-The dashboard will automatically detect and display the incidents as they're logged.
-
----
-
-## 🔄 Workflow: Detecting & Resolving Incidents
-
-### Step 1: Chaos Monkey Injects Bug
-```bash
-npm run chaos
-```
-Bug is injected into a random service and logged to `docs/incident-history.log`.
-
-### Step 2: Dashboard Detects Incident
-The dashboard's `/api/incidents` endpoint reads the log file and displays:
-- Bug type and affected service
-- File path and line number
-- Timestamp of injection
-- Current status (OPEN)
-
-### Step 3: Claude Sub-Agent Resolves (Future)
-According to CLAUDE.md, the sub-agent will:
-1. Read `docs/incident-history.log` (MANDATORY)
-2. Check if this bug type was seen before
-3. If repeated failure → activate **Thinking Mode**
-4. Apply fix and run `npx tsc --noEmit` + `npm test` to verify
-5. Update log with result: `[TIMESTAMP] INCIDENT: <type> | SERVICE: <name> | FIX: <description> | RESULT: SUCCESS|FAILED | THINKING_MODE: YES|NO`
-6. Dashboard polls and updates status to "Investigating" or "Resolved"
-
----
-
-## 📝 Incident History Log Format
-
-**Location:** `docs/incident-history.log`
-
-**Example entry:**
-```
-[2026-05-11T11:57:26.463Z] INCIDENT: SYNTAX_ERROR | SERVICE: payment-service | FILE: index.js | LINE: 46 | RESULT: INJECTED
-[2026-05-11T12:00:15.124Z] UPDATE: Incident incident-1778500646461-rnkn27e3e status changed to Investigating
-[2026-05-11T12:05:32.891Z] INCIDENT: SYNTAX_ERROR | SERVICE: payment-service | FIX: Added missing semicolon | RESULT: SUCCESS | THINKING_MODE: NO
-```
-
----
-
-## 🧠 Piping: Analyze Error Log & Update Dashboard
-
-### Command Pattern
-```bash
-cat services/error.log | claude -p "Analyze this and update the dashboard status to 'Investigating'."
-```
-
-### How It Works
-1. **Read error log** — `cat services/error.log`
-2. **Pipe to Claude** — Sends raw log content to Claude's context
-3. **Claude analyzes** — Identifies the incident type, affected service, root cause
-4. **Update dashboard** — Claude writes an update entry to `docs/incident-history.log`
-5. **Dashboard refreshes** — Polls every 5 seconds and shows updated status
-
-### Example
-```bash
-# Generate an error (by running a broken service)
-node services/payment-service/index.js 2> services/error.log &
-
-# Pipe the error to Claude for analysis
-Get-Content services/error.log | claude -p "Analyze this error. What type of incident is it? Update the dashboard status to 'Investigating'."
-```
-
----
-
-## 🔧 Commands Reference
-
-| Command | Purpose |
-|---------|---------|
-| `npm run chaos` | Inject 1 random bug into a service |
-| `npm run app` | Start Next.js dashboard on port 3001 |
-| `npm run test-services` | Start all 4 microservices in parallel |
-| `npm run all` | Run chaos monkey, then start dashboard |
-| `Get-Content docs\incident-history.log` | View all incidents and fixes |
-| `npx ts-node scripts/chaos-monkey.ts` | Run chaos monkey directly |
-
----
-
-## ✅ Naming Conventions (Enforced)
-
-From `CLAUDE.md` — ALL CODE MUST FOLLOW THESE:
-
-- **Files:** `kebab-case.ts` ✓
-- **Interfaces:** `PascalCase` with `I` prefix → `IIncident` ✓
-- **Services:** Suffix with `Service` → `AuthService` ✓
-- **Constants:** `SCREAMING_SNAKE_CASE` ✓
-- **TypeScript:** `strict: true`, `no any`, prefer `unknown` ✓
-
----
-
-## 🛡️ TypeScript & Code Quality
-
-- **Strict mode:** Always enabled
-- **No `any` types:** Ever. Use `unknown` instead
-- **Error handling:** All async functions must handle errors explicitly
-- **Validation:** Use `zod` for runtime validation
-- **Build check:** `npx tsc --noEmit` before every fix attempt
+### Setup Steps
+1. Create a Vercel account and project for the dashboard
+2. Generate a Vercel token from Account Settings
+3. Add secrets to GitHub repository Settings > Secrets and variables > Actions
+4. Push to main branch to trigger deployment
 
 ---
 
 ## 📊 Dashboard Features
 
-### Sidebar
-- **Health Ring** — Visual indicator of system health (0–100)
-- **Service Status** — Shows online/offline services
-- **Incident Counts** — Open, Resolved, Escalated
-- **Filter Buttons** — Filter incidents by status
-
-### Incident List
-- **Colored badges** — Each bug type has a unique color
-- **Service name** — Which service was affected
-- **Timestamp** — When the bug was injected
-- **Thinking mode indicator** — 🧠 Shows if Claude activated Thinking Mode
-- **Fix attempts** — Count of resolution attempts
-
-### Detail Panel
-- **Full incident info** — Bug type, service, file path
-- **Resolution status** — Current status and fix attempts
-- **Code comparison** — Original vs. injected code
+- **Dark-mode UI** with cyberpunk aesthetics
+- **Active Incidents** counter (from SQLite)
+- **Resolved by Claude** counter
+- **System Health** gauge (based on service status)
+- **Service Status** panel (shows online/offline for each service)
+- **Bug Type Legend** with color coding
+- **Notification Popup** when incidents are resolved (3.5s)
+- **Auto-refresh** every 5 seconds
 
 ---
 
-## 🚨 Resolution Protocol (MANDATORY)
+## 🔄 Current Status
 
-Every fix attempt **MUST** follow this protocol (from CLAUDE.md):
+| Feature | Status |
+|---------|--------|
+| Chaos Monkey (5 bug types) | ✅ Working |
+| SQLite Database | ✅ Working |
+| Dashboard (Dark Mode) | ✅ Working |
+| Auto-update after fix | ✅ Working |
+| Popup notification | ✅ Working |
+| Service Health Monitoring | ✅ Working |
+| MCP Integration Config | ✅ Configured |
+| Multi-Agent Orchestration | ✅ Demo available |
+| Regression Tests (npm test) | ✅ 9 tests passing |
+| GitHub Action (Vercel) | ✅ Workflow created |
 
-### Step 1: Check Incident History
+---
+
+## 🤖 Multi-Agent Orchestration
+
+The project demonstrates multi-agent coordination:
+
+### Agent Roles
+- **Main Agent** - Orchestrates the workflow, coordinates subagents
+- **Subagent Alpha (Debugger)** - Analyzes service code for errors
+- **Subagent Beta (QA)** - Creates regression tests to prevent bug recurrence
+
+### Run the Demo
 ```bash
-cat docs/incident-history.log | grep "SYNTAX_ERROR"
-```
-Look for prior fix attempts on this incident type.
-
-### Step 2: Evaluate Prior Attempts
-- If this exact fix failed before → activate **Thinking Mode**
-- If fresh incident or prior success → proceed with standard fix
-
-### Step 3: Thinking Mode (If Triggered)
-State explicitly: `"[THINKING MODE ACTIVATED] — Prior fix failed. Analyzing alternatives."`
-1. List at least 3 alternative approaches
-2. Choose the least similar to the failed attempt
-3. Document reasoning before applying
-
-### Step 4: Apply Fix + Log Result
-```bash
-[TIMESTAMP] INCIDENT: <type> | SERVICE: <name> | FIX: <description> | RESULT: SUCCESS|FAILED | THINKING_MODE: YES|NO
+npm run subagent -- payment-service
 ```
 
-### Step 5: Verify
-```bash
-npx tsc --noEmit  # Check TypeScript
-npm test          # Run tests
+### Output
+```
+🎯 [Main Agent] Starting multi-agent workflow
+
+🔍 [Subagent Alpha] Starting debugging...
+   Task: Analyze payment-service for errors
+🧪 [Subagent Beta] Starting test creation...
+   Task: Create regression test for NULL_DEREF in payment-service
+✅ [Subagent Beta] Tests created
+✅ [Subagent Alpha] Analysis complete
+
+📊 [Main Agent] Results:
+   Debugger: Found: Unhandled null reference on line 45
+   QA: Test created for NULL_DEREF prevention in payment-service
+
+✅ Workflow complete!
 ```
 
 ---
 
-## 🔌 MCP Integrations (Future)
+## 🧪 Regression Tests
 
-- **SQLite MCP** — Persist incident state across sessions
-- **GitHub MCP** — Detect Chaos Monkey injections via diff
+Run tests to ensure no injected bugs remain and the system works correctly:
 
----
+```bash
+npm test
+```
 
-## 📚 Files to Read
+### Test Coverage
+- Service health endpoints exist
+- No forbidden bug patterns in code (regression check)
+- SQLite database accessible
+- Resolved incidents tracked
+- Dashboard API endpoints work
 
-| File | Purpose |
-|------|---------|
-| [CLAUDE.md](CLAUDE.md) | Claude agent strict instructions & resolution protocol |
-| [AGENTS.md](AGENTS.md) | Multi-agent behavior & escalation rules |
-| [docs/incident-history.log](docs/incident-history.log) | Persistent log of all incidents |
-
----
-
-## 🎓 Learning Path
-
-**Hour 1–2:** Setup  
-✅ Clone & install dependencies  
-✅ Run `npm run chaos` once  
-✅ Check `docs/incident-history.log`  
-
-**Hour 3–4:** Chaos  
-✅ Run `npm run chaos` 5 times  
-✅ Watch bugs get injected  
-✅ Verify log entries  
-
-**Hour 5–6:** Dashboard  
-✅ Start Next.js: `npm run app`  
-✅ View incidents in real-time  
-✅ Filter by status  
-
-**Hour 7–8:** Resolution (Claude Agent)  
-✅ Read CLAUDE.md protocol  
-✅ Implement fix for one incident  
-✅ Log result to incident history  
-✅ Verify dashboard updates  
+**Result:** 9 tests passing ✅
 
 ---
 
-## 🐛 Troubleshooting
+## 📦 Assignment Deliverables
 
-### "Port 3000 is in use"
-→ Dashboard will auto-detect and use 3001. Just open `http://localhost:3001`
+### 1. GitHub Repository
+The complete project is in this repository with:
+- Full source code
+- CLAUDE.md with detailed instructions
+- Scripts for chaos monkey, auto-fix, and multi-agent
+- Next.js dashboard
+- SQLite database integration
 
-### "No incidents showing in dashboard"
-→ Run `npm run chaos` at least once, then check `docs/incident-history.log`  
-→ Ensure Next.js is running and `/api/incidents` endpoint is reachable
+### 2. Agent Logs
+Detailed resolution session logs are available at:
+- **`docs/agent-logs.md`** - Contains a complete session showing:
+  - Plan Mode activation and strategy
+  - Multi-agent orchestration (Main Agent + Subagent Alpha)
+  - Bug injection → Diagnosis → Fix → Verification workflow
+  - Dashboard updates and popup notifications
+  - Test results and post-mortem generation
 
-### "Bug injection failed"
-→ The mutation logic may not apply to that file. Run chaos monkey again to try a different service/bug type
+Key session details:
+- Demonstrates `/plan` mode for strategy planning
+- Demonstrates `/subagent` spawning for parallel work
+- Shows npm test verification (9 tests passing)
+- Shows SQLite database updates
 
-### TypeScript errors
-→ Ensure `tsconfig.json` has `"strict": true`  
-→ Run `npx tsc --noEmit` to validate
+### 3. Loom Video (3 minutes)
+Video demonstration showing:
+1. Running `npm run chaos` to inject a bug
+2. NOT touching keyboard - directing Claude verbally
+3. Claude using Plan Mode to analyze
+4. Claude spawning subagent to fix code
+5. Main agent updating dashboard
+6. Running `npm test` to verify
+7. Dashboard showing 0 Active, popup notification
 
 ---
 
-## 📞 Support
+## 🧹 Troubleshooting
 
-For issues or clarifications:
-1. Read [CLAUDE.md](CLAUDE.md) — All agent behavior is defined there
-2. Check [docs/incident-history.log](docs/incident-history.log) — Trace prior fixes
-3. Review code in `scripts/chaos-monkey.ts` — See how mutations work
+**Dashboard shows 0 Active but should show 1:**
+- Run: `npm run init-db` to re-sync from log
 
----
+**Services showing as offline:**
+- Start services: `npm run test-services`
 
-## 📄 License
-
-ISC
+**Popup not appearing:**
+- Refresh the dashboard page
 
 ---
 
-**Happy chaos engineering! 🚀**
+## 📝 CLAUDE.md
+
+The project includes strict instructions for Claude at `CLAUDE.md`:
+- TypeScript strict mode rules
+- Naming conventions (PascalCase, SCREAMING_SNAKE_CASE)
+- Resolution Protocol (check history → apply fix → log result)
+- No `any` types allowed

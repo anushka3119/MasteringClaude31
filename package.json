@@ -4,15 +4,28 @@
   "description": "Chaos engineering with Claude AI agent incident resolution",
   "scripts": {
     "chaos": "npx ts-node scripts/chaos-monkey.ts",
+    "fix": "npx ts-node scripts/auto-fix.ts",
+    "chaos-and-fix": "npm run chaos",
+    "init-db": "npx ts-node scripts/init-db.ts --sync",
     "app": "cd ClaudeSubAgentIntegration/app && npm run dev",
-    "test-services": "node services/auth-service/index.js & node services/analytics-service/index.js & node services/notification-service/index.js & node services/payment-service/index.js",
+    "test-services": "start \"Auth\" node services/auth-service/index.js && start \"Analytics\" node services/analytics-service/index.js && start \"Notification\" node services/notification-service/index.js && start \"Payment\" node services/payment-service/index.js",
+    "test": "npx vitest run",
+    "test:watch": "npx vitest",
+    "subagent": "npx ts-node scripts/subagent-demo.ts",
     "all": "npm run chaos && npm run app"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^12.9.0",
+    "express": "^4.18.2"
+  },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "supertest": "^7.2.2",
+    "ts-node": "^10.9.1",
     "typescript": "^5",
-    "ts-node": "^10.9.1"
+    "vitest": "^4.1.6"
   }
 }

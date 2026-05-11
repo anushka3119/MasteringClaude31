@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -c services/auth-service/index.js)",
+      "Bash(node -c services/notification-service/index.js)",
+      "Bash(node -c services/payment-service/index.js)",
+      "Bash(node -c services/analytics-service/index.js)",
+      "Bash(npm install *)"
+    ]
+  }
+}

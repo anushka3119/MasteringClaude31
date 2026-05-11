@@ -61,8 +61,29 @@ Format: [TIMESTAMP] INCIDENT: <type> | SERVICE: <name> | FIX: <description> | RE
  */
 function logIncident(incident: IIncident, result: 'INJECTED'): void {
   const timestamp = new Date().toISOString();
+  // Ensure file ends with newline before appending
+  const fileContent = fs.existsSync(INCIDENT_LOG) ? fs.readFileSync(INCIDENT_LOG, 'utf-8') : '';
+  if (fileContent && !fileContent.endsWith('\n')) {
+    fs.appendFileSync(INCIDENT_LOG, '\n', 'utf-8');
+  }
   const logEntry = `[${timestamp}] INCIDENT: ${incident.type} | SERVICE: ${incident.service} | FILE: ${path.basename(incident.filePath)} | LINE: ${incident.lineNumber} | RESULT: ${result}\n`;
   fs.appendFileSync(INCIDENT_LOG, logEntry, 'utf-8');
+
+  // Also write to SQLite for dashboard
+  try {
+    const Database = require('better-sqlite3');
+    const DB_PATH = path.join(__dirname, '..', 'data', 'incidents.db');
+    const db = new Database(DB_PATH);
+    const stmt = db.prepare(`
+      INSERT INTO incidents (type, service, filePath, lineNumber, status, timestamp)
+      VALUES (?, ?, ?, ?, 'OPEN', ?)
+    `);
+    stmt.run(incident.type, incident.service, path.basename(incident.filePath), incident.lineNumber, timestamp);
+    db.close();
+    console.log('✅ Also logged to SQLite database');
+  } catch (e: any) {
+    console.log('⚠️ Could not write to SQLite:', e.message);
+  }
 }
 
 /**

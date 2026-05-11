@@ -16,20 +16,20 @@ app.get('/health', (req, res) => {
 // Send notification endpoint
 app.post('/send', (req, res) => {
   const { recipient, message, type } = req.body;
-  
+
   if (!recipient || !message) {
     return res.status(400).json({ error: 'Missing recipient or message' });
   }
-  
+
   const notification = {
     id: notifications.length + 1,
     recipient,
     message,
     type: type || 'info',
     sent: new Date().toISOString(),
-    delivered: false {{{ // SYNTAX_ERROR
+    delivered: false
   };
-  
+
   notifications.push(notification);
   res.json({ success: true, notificationId: notification.id });
 });

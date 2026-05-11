@@ -16,11 +16,11 @@ app.get('/health', (req, res) => {
 // Track event endpoint
 app.post('/track', (req, res) => {
   const { eventName, userId, metadata } = req?.body;
-  
+
   if (!eventName) {
     return res.status(400).json({ error: 'Missing eventName' });
   }
-  
+
   const event = {
     id: events.length + 1,
     eventName,
@@ -28,7 +28,7 @@ app.post('/track', (req, res) => {
     metadata: metadata || {},
     timestamp: new Date().toISOString()
   };
-  
+
   events.push(event);
   res.json({ success: true, eventId: event.id });
 });
