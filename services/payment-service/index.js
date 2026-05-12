@@ -5,6 +5,17 @@ const PORT = 4004;
 
 app.use(express.json());
 
+// Crash on unhandled errors (chaos engineering mode)
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION:', err.message);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('UNHANDLED REJECTION:', reason);
+  process.exit(1);
+});
+
 // In-memory transactions storage
 let transactions = [];
 
@@ -26,7 +37,7 @@ app.post('/charge', (req, res) => {
     return res.status(400).json({ error: 'Amount must be a positive number' });
   }
 
-  const transaction = {
+  const transaction = { // SYNTAX_ERROR: missing semicolon
     id: transactions.length + 1,
     userId,
     amount,

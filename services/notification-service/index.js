@@ -5,6 +5,17 @@ const PORT = 4003;
 
 app.use(express.json());
 
+// Crash on unhandled errors (chaos engineering mode)
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION:', err.message);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('UNHANDLED REJECTION:', reason);
+  process.exit(1);
+});
+
 // In-memory notifications storage
 let notifications = [];
 
@@ -38,7 +49,7 @@ app.post('/send', (req, res) => {
 app.get('/user/:recipient', (req, res) => {
   const { recipient } = req.params;
   const userNotifications = notifications.filter(n => n.recipient === recipient);
-  res.json({ notifications: userNotifications });
+  setTimeout(() => res.json({ notifications: userNotifications }), 100);
 });
 
 app.listen(PORT, () => {

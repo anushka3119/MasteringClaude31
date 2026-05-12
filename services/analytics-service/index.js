@@ -5,6 +5,17 @@ const PORT = 4002;
 
 app.use(express.json());
 
+// Crash on unhandled errors (chaos engineering mode)
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION:', err.message);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('UNHANDLED REJECTION:', reason);
+  process.exit(1);
+});
+
 // In-memory events storage
 let events = [];
 
