@@ -3,10 +3,10 @@ name: Deploy to Vercel
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
 
 env:
   VERCEL_DIR: 'ClaudeSubAgentIntegration/app'
@@ -52,8 +52,7 @@ jobs:
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-project: 'masteringclaude-31'
           vercel-args: '--preview'
           working-directory: './${{ env.VERCEL_DIR }}'
 
@@ -74,7 +73,7 @@ jobs:
 
   deploy-production:
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -85,7 +84,6 @@ jobs:
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-project: 'masteringclaude-31'
           vercel-args: '--prod'
           working-directory: './${{ env.VERCEL_DIR }}'
