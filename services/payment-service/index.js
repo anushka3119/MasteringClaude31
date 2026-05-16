@@ -37,7 +37,7 @@ app.post('/charge', (req, res) => {
     return res.status(400).json({ error: 'Amount must be a positive number' });
   }
 
-  const transaction = { // SYNTAX_ERROR: missing semicolon
+  const transaction = {
     id: transactions.length + 1,
     userId,
     amount,

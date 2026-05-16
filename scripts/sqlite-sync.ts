@@ -2,7 +2,7 @@
 // Usage: npx ts-node scripts/sqlite-resolve.ts <service> <type> <description>
 import Database from 'better-sqlite3';
 
-const DB_PATH = 'C:\\d-disk shifted\\Downloads\\mc\\data\\incidents.db';
+const DB_PATH = './data/incidents.db';
 
 const args = process.argv.slice(2);
 if (args.length < 3) {
